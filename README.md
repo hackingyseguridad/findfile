@@ -1,6 +1,6 @@
 # findfile
 
-Script en bash para buscar cadena texto o ficheros  en Linux/Unix 
+Script en bash para buscar ficheros, cadenas de texto, IPs ,  en Linux/Unix 
 
 www.hackingyseguridad.com
 
