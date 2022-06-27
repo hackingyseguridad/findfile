@@ -7,8 +7,9 @@ por ejemplo, versiones hasta log4j-core-2.14.1.jar, afectadas por vulnerabilidad
 
 find / |grep log4j-core-2.*.jar
 
-Corregida la vuln a partir de la version: log4j-core-2.16.1.jar 
+find / \( -fstype ext4 -or -fstype ext3 \) -type f -name "log4j-core-2.*.jar" 
 
+- corregida la vuln a partir de la version: log4j-core-2.16.1.jar 
 
 www.hackingyseguridad.com
 
