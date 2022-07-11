@@ -11,6 +11,8 @@ find / \( -fstype ext4 -or -fstype ext3 \) -type f -name "log4j-core-2.*.jar"
 
 - corregida la vuln a partir de la version: log4j-core-2.16.1.jar 
 
+find / -type f -name 'commons-configuration2-*.jar'
+
 www.hackingyseguridad.com
 
 
