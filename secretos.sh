@@ -1,5 +1,7 @@
-
-
+#!/bin/bash
+echo
+echo "Busca secretos en los ficheros de la carpeta /apk"
+echo
 grep  -Hrn "http*" /apk
 grep  -Hrn "token*" /apk
 grep  -Hrn "password*" /apk
