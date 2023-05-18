@@ -9,3 +9,5 @@ grep  -Hrn "auth" /apk
 grep  -Hrn "api" /apk
 grep  -Hrn "sql" /apk
 grep  -Hrn "Digest" /apk
+grep  -Hrn "email" /apk
+ 
