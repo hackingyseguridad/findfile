@@ -12,4 +12,5 @@ echo "..."
 # Elimina IP duplicadas y genera resultado3.txt
 awk '!visited[$0]++' "resultado1.txt" > resultado2.txt
 echo "... Ok"
-echo "..., => generado fichero, resultado2.txt "
+cp resultado2.txt ip.txt
+echo "..., => generado fichero limpio y sin duplicados final, ip.txt "
