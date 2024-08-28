@@ -2,6 +2,7 @@
 echo
 echo "Busca secretos en los ficheros de la carpeta /apk"
 echo
+grep  -Hrn "user" /apk
 grep  -Hrn "http*" /apk
 grep  -Hrn "token*" /apk
 grep  -Hrn "password*" /apk
@@ -13,3 +14,4 @@ grep  -Hrn "email" /apk
 grep  -Hrn "ouath2" /apk 
 grep  -Hrn "UserName" /apk
 grep  -Hrn "Passorwd" /apk
+grep  -Hrn "User" /apk
