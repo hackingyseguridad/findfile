@@ -11,3 +11,4 @@ grep  -Hrn "sql" /apk
 grep  -Hrn "Digest" /apk
 grep  -Hrn "email" /apk
 grep  -Hrn "ouath2" /apk 
+grep  -Hrn "UserName" /apk
