@@ -1,9 +1,9 @@
 #!/bin/bash
 # Script para depurar el fichero resultado.txt, extraer las IP IPv6 y eliminar duplicados
-# Script para IPv6
+# Script para extraer direcciones IPv6
 # Lee del fichero resultado.txt la lista de IP, entrega el resultado en el fichero resultado2.txt
-# Uso: sh depura.sh
-# (C) Antonio Taboada - www.hackingyseguridad.com 2023
+# Uso: sh depura6.sh
+# (C) Antonio Taboada - www.hackingyseguridad.com 2026
 echo
 echo ".."
 # Limpia de caracteres especiales el fichero de entrada ip.txt con direcciones IP IPv6
@@ -24,4 +24,4 @@ echo "..."
 awk '!visited[$0]++' "resultado1.txt" > resultado2.txt
 echo "... Ok"
 cp resultado2.txt ipv6.txt
-echo "..., => generado fichero limpio y sin duplicados final, ip.txt "
+echo "..., => generado fichero limpio y sin duplicados final, ipv6.txt "
