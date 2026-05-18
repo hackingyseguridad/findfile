@@ -13,4 +13,4 @@ find / -type f \( \
   -name "*.frm" -o \
   -name "*.mdb" -o \
   -name "*.accdb" \
-\) 2>/dev/null | head -50
+\) 2>/dev/null 
