@@ -1,70 +1,91 @@
 #!/bin/sh
-# Script para cruzar archivos por IP - Versión compatible con Bash 1.0.x
-# Uso: ./cruza.sh
+#
+# cruce.sh
+# El cruce en si se hace con awk (presente en cualquier Unix, incluidos los
+# mas antiguos) porque es lo unico que da velocidad real con ficheros
+# grandes: carga listadas.txt en tabla hash una sola vez y luego recorre
+# todas.txt en una sola pasada -> O(n+m).
+#
+# Uso: ./cruce.sh [todas.txt] [listadas.txt] [resultado.txt]
+#
 
-# Archivos de entrada y salida
-ARCHIVO_TODAS="fichero2"
-ARCHIVO_LISTADAS="fichero2.txt"
-ARCHIVO_RESULTADO="resultado.txt"
+TODAS="${1:-fichero1.txt}"
+LISTADAS="${2:-fichero2.txt}"
+RESULTADO="${3:-resultado.txt}"
 
-# Verificar que los archivos existen
-if [ ! -f "$ARCHIVO_TODAS" ]; then
-    echo "Error: No se encuentra el archivo $ARCHIVO_TODAS"
+# --- Comprobaciones basicas ---------------------------------------------
+
+if [ ! -f "$TODAS" ]; then
+    echo "ERROR: no existe el fichero '$TODAS'" 1>&2
     exit 1
 fi
 
-if [ ! -f "$ARCHIVO_LISTADAS" ]; then
-    echo "Error: No se encuentra el archivo $ARCHIVO_LISTADAS"
+if [ ! -f "$LISTADAS" ]; then
+    echo "ERROR: no existe el fichero '$LISTADAS'" 1>&2
     exit 1
 fi
 
-# Contar líneas para el progreso
-TOTAL_LINEAS=`wc -l < "$ARCHIVO_TODAS"`
-LINEAS_PROCESADAS=0
+TOTAL=`wc -l < "$TODAS" | tr -d ' '`
 
-# Crear archivo temporal para IPs listadas
-TEMP_IPS="/tmp/ips_listadas_$$.tmp"
-cut -d' ' -f1 "$ARCHIVO_LISTADAS" > "$TEMP_IPS"
+if [ -z "$TOTAL" ] || [ "$TOTAL" -eq 0 ]; then
+    echo "ERROR: '$TODAS' esta vacio" 1>&2
+    exit 1
+fi
 
-# Función para mostrar progreso
-mostrar_progreso() {
-    if [ $TOTAL_LINEAS -gt 0 ]; then
-        PORCENTAJE=`expr $LINEAS_PROCESADAS \* 100 / $TOTAL_LINEAS`
-        echo -n "Progreso: $PORCENTAJE% [$LINEAS_PROCESADAS/$TOTAL_LINEAS]"
-        echo -n "                          "
-        echo -n "\r"
-    fi
+# Fichero de resultado limpio antes de empezar (awk escribe con >>)
+rm -f "$RESULTADO"
+: > "$RESULTADO"
+
+echo "Procesando coincidencias..."
+
+# --- Cruce con awk, con progreso estatico en pantalla --------------------
+
+awk -v total="$TOTAL" -v listfile="$LISTADAS" -v outfile="$RESULTADO" '
+BEGIN {
+    # Cargar listadas.txt en tabla hash (una sola vez, admite duplicados)
+    while ((getline ip < listfile) > 0) {
+        gsub(/^[ \t]+/, "", ip)
+        gsub(/[ \t\r]+$/, "", ip)
+        if (ip != "") lista[ip] = 1
+    }
+    close(listfile)
+
+    count = 0
+    lastpct = -1
 }
+{
+    count++
 
-echo "Iniciando cruce de archivos..."
-echo "Procesando $TOTAL_LINEAS líneas..."
+    ip = $1
+    gsub(/[ \t\r]+$/, "", ip)
 
-# Vaciar archivo de resultado
-> "$ARCHIVO_RESULTADO"
+    if (ip in lista) {
+        print $0 >> outfile
+    }
 
-# Procesar línea por línea
-while read LINEA; do
-    # Extraer IP (primer campo)
-    IP=`echo "$LINEA" | cut -d' ' -f1`
-    
-    # Buscar IP en el archivo de listadas
-    grep "^$IP$" "$TEMP_IPS" > /dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        # Si coincide, escribir la línea completa al resultado
-        echo "$LINEA" >> "$ARCHIVO_RESULTADO"
-    fi
-    
-    # Incrementar contador y mostrar progreso
-    LINEAS_PROCESADAS=`expr $LINEAS_PROCESADAS + 1`
-    mostrar_progreso
-    
-done < "$ARCHIVO_TODAS"
+    pct = int((count * 100) / total)
+    if (pct != lastpct) {
+        printf("\rProcesando coincidencias... %3d%%", pct) > "/dev/stderr"
+        fflush("/dev/stderr")
+        lastpct = pct
+    }
+}
+END {
+    printf("\rProcesando coincidencias... 100%%\n") > "/dev/stderr"
+    close(outfile)
+}
+' "$TODAS"
 
-# Limpiar archivo temporal
-rm -f "$TEMP_IPS"
+# --- Resumen final ---------------------------------------------------------
 
-# Mostrar resultado final
+MATCHES=`wc -l < "$RESULTADO" 2>/dev/null | tr -d ' '`
+[ -z "$MATCHES" ] && MATCHES=0
+
 echo ""
-echo "Proceso completado!"
-echo "Resultado guardado en: $ARCHIVO_RESULTADO"
-echo "Líneas coincidentes: `wc -l < "$ARCHIVO_RESULTADO"`"
+echo "Cruce completado."
+echo "  IPs en $TODAS ........... $TOTAL"
+echo "  Coincidencias ............ $MATCHES"
+echo "  Resultado guardado en .... $RESULTADO"
+
+exit 0
+
