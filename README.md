@@ -257,14 +257,9 @@ REFERENCIAS:
 ---
 
 
-##  Licencia
-
-Este proyecto está licenciado bajo **GPL-3.0**. Consulta el fichero [LICENSE](LICENSE) para más detalles.
-
-##  Enlaces
-
+#
 http://www.hackingyseguridad.com/
-
+#
 
 
 
