@@ -77,6 +77,187 @@ sudo ./findfile.sh
 
 Revisa cada script antes de ejecutarlo: algunos requieren editar variables internas (ruta a analizar, ficheros de entrada) o pasar argumentos por línea de comandos según el caso.
 
+## FASE 1 — Localizar ficheros por nombre/extensión (`findfile.sh`)
+
+Recorre todo el sistema (`find /`) buscando cada patrón definido en `extension.txt` (jars
+vulnerables, backups, ficheros de configuración, etc.).
+
+```bash
+# Editar extension.txt con los patrones de interés, por ejemplo:
+cat > extension.txt << 'EOF'
+log4j-core-2.*.jar
+commons-configuration2-*.jar
+*.bak
+*.sql
+id_rsa
+EOF
+
+sudo ./findfile.sh
+```
+
+**Caso de referencia — Log4Shell (CVE-2021-44228):**
+
+```bash
+# Cualquier versión de log4j-core
+find / | grep log4j-core-2.*.jar
+
+# Solo en sistemas de ficheros ext3/ext4
+find / \( -fstype ext4 -or -fstype ext3 \) -type f -name "log4j-core-2.*.jar"
+
+# Vulnerabilidad corregida a partir de log4j-core-2.16.1.jar
+
+# CVE relacionada en commons-configuration2
+find / -type f -name 'commons-configuration2-*.jar'
+```
+
+Interpretación: cualquier resultado con versión `< 2.16.1` de `log4j-core` es un hallazgo de
+severidad crítica (CVSS 10.0 / CVE-2021-44228) pendiente de actualización o mitigación.
+
+---
+
+## FASE 2 — Búsqueda de secretos y credenciales (`secretos.sh`)
+
+Lanza `grep -Hrn` con patrones típicos de secretos (`user`, `password`, `token`, `api`, `auth`,
+`sql`, `Digest`, `email`, `oauth2`...) sobre un directorio. Por defecto apunta a `/apk` (útil tras
+descomprimir un APK/paquete), pero puede adaptarse a cualquier ruta.
+
+```bash
+# Uso por defecto (directorio /apk)
+./secretos.sh
+
+# Adaptado a otra ruta: editar las líneas grep -Hrn "..." /apk -> /ruta/objetivo
+sed -i 's#/apk#/ruta/objetivo#g' secretos.sh
+./secretos.sh
+```
+
+**Interpretación de la salida:**
+- Cada línea devuelta es `fichero:línea:contenido` → revisar manualmente para descartar falsos
+  positivos (nombres de variable genéricos vs. secreto real).
+- Prestar especial atención a coincidencias en `token`, `Passorwd`/`password`, `Digest` y `oauth2`,
+  con mayor probabilidad de ser credenciales reales.
+
+---
+
+## FASE 3 — Búsqueda de texto, IPs, emails y usuarios
+
+```bash
+# Buscar una cadena de texto en el sistema de ficheros
+./findtexto.sh
+
+# Buscar direcciones IP dentro de ficheros/logs
+./buscarIP.sh
+
+# Buscar emails dentro de ficheros o rutas (Python)
+python3 busca_email.py
+
+# Buscar nombres de usuario dentro de ficheros o rutas (Python)
+python3 "busca_user..py"
+
+# Buscar ficheros/cadenas relacionados con bases de datos (dumps, .sql, cadenas de conexión)
+./busca_bbdd.sh
+```
+
+Revisar la cabecera de cada script antes de ejecutar: varios requieren editar variables internas
+(ruta a analizar, patrón, fichero de entrada) según el objetivo concreto de la auditoría.
+
+---
+
+## FASE 4 — Actividad reciente en el sistema
+
+```bash
+# Ficheros modificados hoy
+./modificadohoy.sh
+
+# Ficheros modificados en un intervalo reciente (últimos minutos/horas)
+./modificadoahora.sh
+```
+
+Útil tras detectar un compromiso: ayuda a acotar la ventana temporal del ataque (webshells,
+persistencia, ficheros de configuración alterados).
+
+---
+
+## FASE 5 — Cruce, comparación y depuración de listados
+
+```bash
+# Cruce (intersección) entre dos ficheros de datos
+./cruza.sh
+
+# Comparar el contenido de dos ficheros
+./compara.sh
+
+# Comprobar coincidencias de IPs entre dos listados
+./coincideip.sh
+
+# Contar ocurrencias/líneas de un patrón o fichero
+./cuenta.sh
+
+# Depurar/normalizar un listado (IPv4)
+./depura.sh
+
+# Depurar/normalizar un listado (IPv6)
+./depura6.sh
+
+# Eliminar líneas duplicadas (IPs, dominios, etc.)
+./eliminaduplicados.sh
+```
+
+Flujo recomendado para dejar un listado de IPs listo para otra skill (p. ej. `blacklist-ip`):
+
+```bash
+./eliminaduplicados.sh   # quitar duplicados
+./depura.sh              # normalizar formato IPv4 (o depura6.sh para IPv6)
+./cuenta.sh               # verificar recuento final antes de pasar el listado a auditoría
+```
+
+---
+
+## FASE 6 — Decisión: siguiente paso según resultado
+
+| Resultado | Acción recomendada |
+|---|---|
+| Versión vulnerable de librería localizada (`findfile.sh`) | Documentar como hallazgo crítico/alto según CVE, priorizar actualización o mitigación |
+| Credenciales/tokens encontrados en claro (`secretos.sh`) | Hallazgo crítico: rotar credenciales de inmediato, documentar ruta exacta, evitar registrar el secreto completo en el informe |
+| IPs cruzadas coinciden con listado de amenazas conocido | Escalar a la skill `blacklist-ip` para verificar reputación y a análisis de logs para confirmar actividad maliciosa |
+| Ficheros modificados recientemente sin justificación | Indicio de posible compromiso: correlacionar con logs de acceso y procesos en ejecución |
+| Sin resultados relevantes | Documentar como baseline limpio en el informe |
+
+---
+
+## PLANTILLA DE HALLAZGO PARA INFORME
+
+```
+HALLAZGO: [Secreto en claro / Librería vulnerable en disco / Actividad de fichero sospechosa]
+Ruta:      [ruta exacta del fichero encontrado]
+Script:    [findfile.sh / secretos.sh / buscarIP.sh / ...]
+CVE (si aplica): [ej. CVE-2021-44228]
+CVSS v3.1: [según severidad]
+
+DESCRIPCIÓN:
+[Qué se ha encontrado y por qué supone un riesgo]
+
+EVIDENCIA:
+$ sudo ./findfile.sh
+[output recortado — NUNCA volcar el secreto completo en el informe, usar máscara: pa****23]
+
+IMPACTO:
+[Exposición de credenciales / RCE por librería vulnerable / indicio de compromiso]
+
+REMEDIACIÓN:
+- Rotar credenciales expuestas de inmediato
+- Actualizar la librería a la versión corregida
+- Eliminar backups/ficheros temporales con datos sensibles fuera de rutas accesibles
+- Revisar permisos del fichero/directorio afectado
+
+REFERENCIAS:
+- https://github.com/hackingyseguridad/findfile
+- [enlace al CVE si aplica]
+```
+
+---
+
+
+
 ## ⚠️ Aviso legal
 
 Estas herramientas están pensadas para uso en sistemas **propios** o sobre los que se dispone de **autorización expresa** para realizar auditorías de seguridad. El uso no autorizado sobre sistemas de terceros puede constituir un delito. Los autores no se hacen responsables del mal uso de este software.
