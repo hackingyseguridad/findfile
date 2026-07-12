@@ -257,18 +257,13 @@ REFERENCIAS:
 ---
 
 
-
-## ⚠️ Aviso legal
-
-Estas herramientas están pensadas para uso en sistemas **propios** o sobre los que se dispone de **autorización expresa** para realizar auditorías de seguridad. El uso no autorizado sobre sistemas de terceros puede constituir un delito. Los autores no se hacen responsables del mal uso de este software.
-
-## 📜 Licencia
+##  Licencia
 
 Este proyecto está licenciado bajo **GPL-3.0**. Consulta el fichero [LICENSE](LICENSE) para más detalles.
 
-## 🔗 Enlaces
+##  Enlaces
 
-www.hackingyseguridad.com
+http://www.hackingyseguridad.com/
 
 
 
